@@ -8,7 +8,7 @@ from tensorflow.keras.constraints import MaxNorm
 from tensorflow.keras.optimizers.schedules import LearningRateSchedule
 from tensorflow.keras.applications.resnet50 import preprocess_input
 from sklearn.preprocessing import OneHotEncoder
-
+import tensorflow as tf
 
 def get_resnet():
     # if you want to download weights, remove weights param in ResNet40 and remove this line
@@ -32,7 +32,7 @@ def get_resnet():
 
 
     def load_resnet50(path="model-weights/resnet50_last_block.hdf5"):
-        model = load_model(path)
+        model = load_model(path, compile=False)
         for i in range(len(model.layers)):
             if model.layers[i].__class__.__name__ == "BatchNormalization":
                 model.layers[i].trainable = False
@@ -74,19 +74,11 @@ class MyDecay(LearningRateSchedule):
 
 
 
-def get_input_and_target_for_head(first_blocks, Xs, ys, Xv, yv, Xt, yt):
-    X_source = first_blocks.predict(preprocess_input(Xs))
-    X_val = first_blocks.predict(preprocess_input(Xv))
-    X_target = first_blocks.predict(preprocess_input(Xt))
+def get_input_and_target_for_head(first_blocks, X_arr):
+    new_X_arr = []
+    for x in X_arr:
+        new_x = first_blocks.predict(preprocess_input(x))
+        new_X_arr.append(new_x)
 
-    one = OneHotEncoder(sparse=False)
-    one.fit(np.array(ys).reshape(-1, 1))
-
-    y_source = one.transform(np.array(ys).reshape(-1, 1))
-    y_val = one.transform(np.array(yv).reshape(-1, 1))
-    y_target = one.transform(np.array(yt).reshape(-1, 1))
-
-    print("X source shape: %s"%str(X_source.shape))
-    print("X target shape: %s"%str(X_target.shape))
-
-    return X_source, y_source, X_val, y_val, X_target, y_target
+    return new_X_arr
+    

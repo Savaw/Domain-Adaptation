@@ -1,6 +1,7 @@
 import os
 import tensorflow as tf
 import numpy as np 
+from sklearn.preprocessing import OneHotEncoder
 
 
 DOMAINS = ["amazon", "dslr", "webcam"]
@@ -52,5 +53,10 @@ def get_input_and_labels_from_batch_ds(dataset):
     xy = [(x, y) for x, y in dataset]
     X = np.concatenate([x for x, y in xy], axis=0)
     Y = np.concatenate([y for x, y in xy], axis=0)
+
+    one = OneHotEncoder(sparse_output=False)
+    one.fit(np.array(Y).reshape(-1, 1))
+
+    Y = one.transform(np.array(Y).reshape(-1, 1))
 
     return X, Y

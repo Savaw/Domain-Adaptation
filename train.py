@@ -11,11 +11,13 @@ from sklearn.manifold import TSNE
 from adapt.utils import UpdateLambda
 from adapt.feature_based import DeepCORAL,MCD,MDD, WDGRL ,CDAN ,CCSA ,DANN,ADDA
 
-def train_model(model_name, Xs, ys, Xv, yv, Xt, yt, epochs=50, batch_size=32):
+def train_model(model_name, Xs, ys, Xv, yv, Xt, yt, epochs=50, batch_size=32, results_file=None):
     first_blocks, _, load_resnet50 = get_resnet()
 
-    X_source, y_source, X_val, y_val, X_target, y_target = get_input_and_target_for_head(first_blocks, Xs, ys, Xv, yv, Xt, yt)
+    print("Getting input...")
+    Xs, Xv, Xt = get_input_and_target_for_head(first_blocks, [Xs, Xv, Xt])
 
+    print("Getting model...")
     lr = 0.04
     momentum = 0.9
     alpha = 0.0002
@@ -29,8 +31,21 @@ def train_model(model_name, Xs, ys, Xv, yv, Xt, yt, epochs=50, batch_size=32):
                         momentum=momentum, nesterov=True)
     optimizer_disc = SGD(learning_rate=MyDecay(mu_0=lr/10., alpha=alpha))
 
+    target_data_available = True
 
-    if model_name == "MDD":
+    if model_name == "base":
+        model = FineTuning(encoder=encoder,
+                            task=task,
+                            optimizer=optimizer_task,
+                            optimizer_enc=optimizer_enc,
+                            loss="categorical_crossentropy",
+                            metrics=["acc"],
+                            copy=False,
+                            pretrain=True,
+                            pretrain__epochs=5)
+        target_data_available = False
+
+    elif model_name == "MDD":
         model = MDD(encoder, task,
                 loss="categorical_crossentropy",
                 metrics=["acc"],
@@ -106,15 +121,30 @@ def train_model(model_name, Xs, ys, Xv, yv, Xt, yt, epochs=50, batch_size=32):
                     )
     
     
-    print("MODEL_NAME:", model.name)
-    model.fit(X=X_source, y=y_source, Xt=X_target, yt=y_target, epochs=epochs, batch_size=batch_size, validation_data=(X_val, y_val))
+    print(f"Training {model.name}...")
+    if target_data_available:
+        model.fit(Xs, ys, Xt=Xt, yt=yt, epochs=epochs, batch_size=batch_size, validation_data=(Xv, yv))
+    else:
+        model.fit(Xs, ys, epochs=epochs, batch_size=batch_size, validation_data=(Xv, yv))
 
-    acc = model.history.history.get("acc", None) or model.history.history.get("disc_acc", None)
+
+    acc = model.history.history.get("acc", None) 
+    disc_acc = model.history.history.get("disc_acc", None)
     val_acc = model.history.history["val_acc"]
     
-    source_score = model.score(X_source, y_source)
-    val_score = model.score(X_val, y_val)
-    target_score = model.score(X_target, y_target)
+    source_score = model.score(Xs, ys)
+    val_score = model.score(Xv, yv)
+    target_score = model.score(Xt, yt)
+
+
+    result = f"{model_name}, {acc[-1] if acc else None}, {disc_acc[-1] if disc_acc else None}, {val_acc[-1] if val_acc else None}, {source_score}, {val_score}, {target_score}\n"
+    print("####", result)
+
+    print(f"Storing results...")
+
+    if results_file:
+        with open(results_file, "a") as myfile:
+            myfile.write(result)
 
     plt.plot(acc, label="Train acc - final value: %.3f"%acc[-1])
     plt.plot(val_acc, label="Test acc - final value: %.3f"%val_acc[-1])
@@ -122,4 +152,5 @@ def train_model(model_name, Xs, ys, Xv, yv, Xt, yt, epochs=50, batch_size=32):
     plt.xlabel("Epochs")
     plt.ylabel("Acc")
     plt.savefig(f"results/{model.name}.png") 
+    plt.close('all')
     
