@@ -1,4 +1,4 @@
-
+import numpy as np
 from tensorflow.keras.applications.resnet50 import ResNet50
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input
@@ -6,6 +6,8 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.constraints import MaxNorm
 from tensorflow.keras.optimizers.schedules import LearningRateSchedule
+from tensorflow.keras.applications.resnet50 import preprocess_input
+from sklearn.preprocessing import OneHotEncoder
 
 
 def get_resnet():
@@ -36,7 +38,7 @@ def get_resnet():
                 model.layers[i].trainable = False
         return model
 
-    last_block.summary()
+    # last_block.summary()
     last_block.save("model-weights/resnet50_last_block.hdf5")
 
     return first_blocks, last_block, load_resnet50
@@ -70,3 +72,21 @@ class MyDecay(LearningRateSchedule):
         return self.mu_0 / (1+self.alpha * p)**self.beta
 
 
+
+
+def get_input_and_target_for_head(first_blocks, Xs, ys, Xv, yv, Xt, yt):
+    X_source = first_blocks.predict(preprocess_input(Xs))
+    X_val = first_blocks.predict(preprocess_input(Xv))
+    X_target = first_blocks.predict(preprocess_input(Xt))
+
+    one = OneHotEncoder(sparse=False)
+    one.fit(np.array(ys).reshape(-1, 1))
+
+    y_source = one.transform(np.array(ys).reshape(-1, 1))
+    y_val = one.transform(np.array(yv).reshape(-1, 1))
+    y_target = one.transform(np.array(yt).reshape(-1, 1))
+
+    print("X source shape: %s"%str(X_source.shape))
+    print("X target shape: %s"%str(X_target.shape))
+
+    return X_source, y_source, X_val, y_val, X_target, y_target

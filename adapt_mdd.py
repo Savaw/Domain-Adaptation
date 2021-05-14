@@ -4,7 +4,7 @@ from sklearn.preprocessing import OneHotEncoder
 import tensorflow as tf 
 import matplotlib.pyplot as plt 
 import numpy as np
-from base_resnet import MyDecay, get_task, get_resnet
+from backbone import MyDecay, get_task, get_resnet, get_input_and_target_for_head
 from adapt.feature_based import MDD
 from adapt.utils import UpdateLambda
 
@@ -38,17 +38,7 @@ def adapt_mdd_model(Xs, ys, Xt, yt, epochs=50, batch_size=32):
                 callbacks=[UpdateLambda(lambda_max=0.1)])
 
 
-    X_source = first_blocks.predict(preprocess_input(Xs))
-    X_target = first_blocks.predict(preprocess_input(Xt))
-
-    one = OneHotEncoder(sparse=False)
-    one.fit(np.array(ys).reshape(-1, 1))
-
-    y_source = one.transform(np.array(ys).reshape(-1, 1))
-    y_target = one.transform(np.array(yt).reshape(-1, 1))
-
-    print("X source shape: %s"%str(X_source.shape))
-    print("X target shape: %s"%str(X_target.shape))
+    X_source, y_source, X_target, y_target= get_input_and_target_for_head(first_blocks, Xs, ys, Xt, yt)
 
 
     mdd.fit(X=X_source[:-1], y=y_source[:-1], Xt=X_target, epochs=epochs, batch_size=batch_size, validation_data=(X_target, y_target))
@@ -56,20 +46,12 @@ def adapt_mdd_model(Xs, ys, Xt, yt, epochs=50, batch_size=32):
 
     acc = mdd.history.history["acc"]
     val_acc = mdd.history.history["val_acc"]
+    
     plt.plot(acc, label="Train acc - final value: %.3f"%acc[-1])
     plt.plot(val_acc, label="Test acc - final value: %.3f"%val_acc[-1])
-    plt.legend(); plt.xlabel("Epochs"); plt.ylabel("Acc"); plt.show()
+    plt.legend()
+    plt.xlabel("Epochs")
+    plt.ylabel("Acc")
+    plt.savefig('results/mdd.png') 
 
-
-    # Xs_enc = mdd.transform(X_source)
-    # Xt_enc = mdd.transform(X_target)
-
-    # np.random.seed(0)
-    # X_ = np.concatenate((Xs_enc, Xt_enc))
-    # X_tsne = TSNE(2).fit_transform(X_)
-    # plt.figure(figsize=(8, 6))
-    # plt.plot(X_tsne[:len(X_source), 0], X_tsne[:len(X_source), 1], '.', label="source")
-    # plt.plot(X_tsne[len(X_source):, 0], X_tsne[len(X_source):, 1], '.', label="target")
-    # plt.legend(fontsize=14)
-    # plt.title("Encoded Space tSNE for the MDD model")
-    # plt.show()
+    return acc, val_acc

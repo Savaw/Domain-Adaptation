@@ -11,7 +11,7 @@ from data_loader import load_data, get_input_and_labels_from_batch_ds
 gpu_options = tf.compat.v1.GPUOptions(allow_growth=True)
 session = tf.compat.v1.InteractiveSession(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
 
-epochs=50
+epochs=1
 batch_size=32
 
 train_ds, val_ds, target_ds = load_data("amazon", "webcam", image_size=(224,224))
@@ -26,4 +26,10 @@ from pretrained_resnet import pretrained_resnet_model
 
 from adapt_mdd import adapt_mdd_model
 
-adapt_mdd_model(Xs, ys, Xt, yt, epochs=epochs, batch_size=batch_size)
+# adapt_mdd_model(Xs, ys, Xt, yt, epochs=epochs, batch_size=batch_size)
+from train import train_model
+
+MODEL_NAMES = ["DeepCORAL", "MCD", "MDD", "WDGRL", "CDAN", "CCSA", "DANN", "ADDA"]
+
+for model_name in MODEL_NAMES:
+    train_model(model_name, Xs, ys, Xv, yv, Xt, yt, epochs=epochs, batch_size=batch_size)

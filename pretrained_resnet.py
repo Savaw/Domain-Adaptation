@@ -6,7 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 import tensorflow as tf 
 import matplotlib.pyplot as plt 
 import numpy as np
-from base_resnet import MyDecay, get_task, get_resnet
+from backbone import MyDecay, get_task, get_resnet, get_input_and_target_for_head
 from sklearn.manifold import TSNE
 
 def pretrained_resnet_model(Xs, ys, Xt, yt, epochs=50, batch_size=32):
@@ -32,17 +32,7 @@ def pretrained_resnet_model(Xs, ys, Xt, yt, epochs=50, batch_size=32):
                             pretrain__epochs=5)
 
 
-    X_source = first_blocks.predict(preprocess_input(Xs))
-    X_target = first_blocks.predict(preprocess_input(Xt))
-
-    one = OneHotEncoder(sparse=False)
-    one.fit(np.array(ys).reshape(-1, 1))
-
-    y_source = one.transform(np.array(ys).reshape(-1, 1))
-    y_target = one.transform(np.array(yt).reshape(-1, 1))
-
-    print("X source shape: %s"%str(X_source.shape))
-    print("X target shape: %s"%str(X_target.shape))
+    X_source, y_source, X_target, y_target= get_input_and_target_for_head(first_blocks, Xs, ys, Xt, yt)
 
     finetunig.fit(X_source, y_source, epochs=epochs, batch_size=batch_size, validation_data=(X_target, y_target))
 
@@ -52,5 +42,9 @@ def pretrained_resnet_model(Xs, ys, Xt, yt, epochs=50, batch_size=32):
 
     plt.plot(acc, label="Train acc - final value: %.3f"%acc[-1])
     plt.plot(val_acc, label="Test acc - final value: %.3f"%val_acc[-1])
-    plt.legend(); plt.xlabel("Epochs"); plt.ylabel("Acc"); plt.show()
+    plt.legend()
+    plt.xlabel("Epochs")
+    plt.ylabel("Acc")
+    plt.savefig('results/resnet.png') 
 
+    return acc, val_acc
