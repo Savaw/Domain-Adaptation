@@ -6,7 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 import tensorflow as tf 
 import matplotlib.pyplot as plt 
 import numpy as np
-from tf.backbone import MyDecay, get_task, get_resnet, get_input_and_target_for_head
+from backbone import MyDecay, get_task, get_resnet, get_input_and_target_for_head
 from sklearn.manifold import TSNE
 from adapt.utils import UpdateLambda
 from adapt.feature_based import DeepCORAL,MCD,MDD, WDGRL ,CDAN ,CCSA ,DANN,ADDA
