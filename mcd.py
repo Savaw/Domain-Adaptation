@@ -9,20 +9,26 @@ from tqdm import tqdm
 import os
 import gc
 from datetime import datetime
+import copy
 
-from pytorch_adapt.adapters import DANN
+from pytorch_adapt.adapters import MCD
 from pytorch_adapt.containers import Models, Optimizers, LRSchedulers
-from pytorch_adapt.datasets import DataloaderCreator, get_mnist_mnistm, get_office31
+from pytorch_adapt.datasets import DataloaderCreator, get_office31
 from pytorch_adapt.frameworks.ignite import CheckpointFnCreator, Ignite
-from pytorch_adapt.models import Discriminator, mnistC, mnistG, office31C, office31G
+from pytorch_adapt.models import Discriminator, office31C, office31G
 from pytorch_adapt.validators import AccuracyValidator, IMValidator, ScoreHistory
+from pytorch_adapt.containers import Misc
+from pytorch_adapt.layers import RandomizedDotProduct
+from pytorch_adapt.layers import MultipleModels
+from pytorch_adapt.utils import common_functions 
+from pytorch_adapt.containers import LRSchedulers
 
 from pprint import pprint
 
-PATIENCE = 20
+PATIENCE = 10
 EPOCHS = 100
-BATCH_SIZE = 32
-NUM_WORKERS = 2
+BATCH_SIZE = 32 + 16
+NUM_WORKERS = 1
 TRIAL_COUNT = 3
 
 logging.basicConfig()
@@ -61,6 +67,7 @@ class VizHook:
         plt.close('all')
 
 
+# root='/content/drive/MyDrive/Shared with Sabas/Bsc/data'
 root="datasets/pytorch-adapt/"
 batch_size=BATCH_SIZE
 num_workers=NUM_WORKERS
@@ -69,7 +76,7 @@ DATASET_PAIRS = [("amazon", "webcam"), ("amazon", "dslr"),
                     ("webcam", "amazon"), ("webcam", "dslr"),
                     ("dslr", "amazon"), ("dslr", "webcam")]
 
-MODEL_NAME = "dann"
+MODEL_NAME = "mcd"
 
 for trial_number in range(TRIAL_COUNT):
     base_output_dir = f"results/vishook/{MODEL_NAME}/{trial_number}"
@@ -100,24 +107,27 @@ for trial_number in range(TRIAL_COUNT):
 
         device = torch.device("cuda")
         weights_root = os.path.join(root, "weights")
+        trained_domain = "amazon"
 
         G = office31G(pretrained=True, model_dir=weights_root).to(device)
-        C = office31C(domain=source_domain, pretrained=True, model_dir=weights_root).to(device)
-        D = Discriminator(in_size=2048, h=1024).to(device)
+        C0 = office31C(domain=trained_domain, pretrained=True, model_dir=weights_root).to(device)
+        C1 = common_functions.reinit(copy.deepcopy(C0))
+        C = MultipleModels(C0, C1)
 
-        models = Models({"G": G, "C": C, "D": D})
+        models = Models({"G": G, "C": C})
 
         optimizers = Optimizers((torch.optim.Adam, {"lr": 0.0005}))
         lr_schedulers = LRSchedulers((torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.99}))
 
-        adapter = DANN(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
-        checkpoint_fn = CheckpointFnCreator(dirname=f"{output_dir}/saved_models", require_empty=False)
+        adapter= MCD(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
+        checkpoint_fn = CheckpointFnCreator(dirname="saved_models", require_empty=False)
         validator = ScoreHistory(IMValidator())
         tarAccuracyValidator = AccuracyValidator(key_map={"target_val_with_labels":"src_val"})
-        val_hooks = [ScoreHistory(AccuracyValidator()), ScoreHistory(tarAccuracyValidator), VizHook(output_dir=output_dir)]
+        val_hooks = [ScoreHistory(AccuracyValidator()), ScoreHistory(tarAccuracyValidator), VizHook()]
         trainer = Ignite(
             adapter, validator=validator, val_hooks=val_hooks, checkpoint_fn=checkpoint_fn
         )
+
 
 
         early_stopper_kwargs = {"patience": PATIENCE}
@@ -159,6 +169,5 @@ for trial_number in range(TRIAL_COUNT):
         del trainer
         del G
         del C
-        del D
         gc.collect()
         torch.cuda.empty_cache()
