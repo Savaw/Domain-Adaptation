@@ -25,11 +25,13 @@ from pytorch_adapt.containers import LRSchedulers
 
 from pprint import pprint
 
-PATIENCE = 10
-EPOCHS = 100
+PATIENCE = 15
+EPOCHS = 120
 BATCH_SIZE = 32 + 16
-NUM_WORKERS = 1
-TRIAL_COUNT = 3
+NUM_WORKERS = 2
+
+INITIAL_TRIAL = 10
+TRIAL_COUNT = 5
 
 logging.basicConfig()
 # logging.getLogger("pytorch-adapt").setLevel(logging.INFO)
@@ -78,7 +80,7 @@ DATASET_PAIRS = [("amazon", "webcam"), ("amazon", "dslr"),
 
 MODEL_NAME = "mcd"
 
-for trial_number in range(TRIAL_COUNT):
+for trial_number in range(INITIAL_TRIAL, INITIAL_TRIAL+TRIAL_COUNT):
     base_output_dir = f"results/vishook/{MODEL_NAME}/{trial_number}"
     os.makedirs(base_output_dir, exist_ok=True)
 
@@ -107,28 +109,25 @@ for trial_number in range(TRIAL_COUNT):
 
         device = torch.device("cuda")
         weights_root = os.path.join(root, "weights")
-        trained_domain = "amazon"
 
         G = office31G(pretrained=True, model_dir=weights_root).to(device)
-        C0 = office31C(domain=trained_domain, pretrained=True, model_dir=weights_root).to(device)
+        C0 = office31C(domain=source_domain, pretrained=True, model_dir=weights_root).to(device)
         C1 = common_functions.reinit(copy.deepcopy(C0))
         C = MultipleModels(C0, C1)
 
         models = Models({"G": G, "C": C})
 
-        optimizers = Optimizers((torch.optim.Adam, {"lr": 0.0005}))
+        optimizers = Optimizers((torch.optim.Adam, {"lr": 0.001}))
         lr_schedulers = LRSchedulers((torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.99}))
 
         adapter= MCD(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
         checkpoint_fn = CheckpointFnCreator(dirname="saved_models", require_empty=False)
         validator = ScoreHistory(IMValidator())
         tarAccuracyValidator = AccuracyValidator(key_map={"target_val_with_labels":"src_val"})
-        val_hooks = [ScoreHistory(AccuracyValidator()), ScoreHistory(tarAccuracyValidator), VizHook()]
+        val_hooks = [ScoreHistory(AccuracyValidator()), ScoreHistory(tarAccuracyValidator), VizHook(output_dir=output_dir)]
         trainer = Ignite(
             adapter, validator=validator, val_hooks=val_hooks, checkpoint_fn=checkpoint_fn
         )
-
-
 
         early_stopper_kwargs = {"patience": PATIENCE}
 

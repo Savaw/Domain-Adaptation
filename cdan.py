@@ -21,11 +21,11 @@ from pytorch_adapt.layers import RandomizedDotProduct
 
 from pprint import pprint
 
-PATIENCE = 15
+PATIENCE = 10
 EPOCHS = 100
-BATCH_SIZE = 32
+BATCH_SIZE = 32 + 8
 NUM_WORKERS = 2
-TRIAL_COUNT = 3
+TRIAL_COUNT = 5
 
 logging.basicConfig()
 # logging.getLogger("pytorch-adapt").setLevel(logging.INFO)
@@ -74,7 +74,7 @@ DATASET_PAIRS = [("amazon", "webcam"), ("amazon", "dslr"),
 
 MODEL_NAME = "cdan"
 
-for trial_number in range(TRIAL_COUNT):
+for trial_number in range(3,TRIAL_COUNT+1):
     base_output_dir = f"results/vishook/{MODEL_NAME}/{trial_number}"
     os.makedirs(base_output_dir, exist_ok=True)
 
@@ -105,7 +105,7 @@ for trial_number in range(TRIAL_COUNT):
         model_dir = os.path.join(root, "weights")
 
         G = office31G(pretrained=True, model_dir=model_dir)
-        C = office31C(domain="amazon", pretrained=True, model_dir=model_dir)
+        C = office31C(domain=source_domain, pretrained=True, model_dir=model_dir)
         D = Discriminator(in_size=2048, h=1024)
 
         models = Models({"G": G, "C": C, "D": D})

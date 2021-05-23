@@ -19,8 +19,8 @@ from pytorch_adapt.validators import AccuracyValidator, IMValidator, ScoreHistor
 
 from pprint import pprint
 
-PATIENCE = 20
-EPOCHS = 100
+PATIENCE = 10
+EPOCHS = 50
 BATCH_SIZE = 32
 NUM_WORKERS = 2
 TRIAL_COUNT = 3
@@ -71,7 +71,8 @@ DATASET_PAIRS = [("amazon", "webcam"), ("amazon", "dslr"),
 
 MODEL_NAME = "dann"
 
-for trial_number in range(TRIAL_COUNT):
+pass_next = 1
+for trial_number in range(4, 6):
     base_output_dir = f"results/vishook/{MODEL_NAME}/{trial_number}"
     os.makedirs(base_output_dir, exist_ok=True)
 
@@ -83,6 +84,10 @@ for trial_number in range(TRIAL_COUNT):
 
 
     for source_domain, target_domain in DATASET_PAIRS:
+        if pass_next:
+            pass_next -= 1
+            continue
+        
         pair_name = f"{source_domain[0]}2{target_domain[0]}"
         output_dir = os.path.join(base_output_dir, pair_name)
         os.makedirs(output_dir, exist_ok=True)
