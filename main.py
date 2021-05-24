@@ -25,7 +25,7 @@ def run_experiment_on_model(args, model_name):
         with open(results_file, "w") as myfile:
             myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
 
-        hp = HP(lr=0.0005, gamma=0.99)
+        hp = HP(lr=args.lr, gamma=args.gamma)
 
         for source_domain, target_domain in DATASET_PAIRS:
             logging.info(f"Running experiment on model {model_name} trail {trial_number}/{args.trials_count} pair {source_domain}2{target_domain}")
@@ -37,6 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_epochs', default=60, type=int)
     parser.add_argument('--patience', default=10, type=int)
     parser.add_argument('--batch_size', default=32, type=int)
+    parser.add_argument('--num_workers', default=2, type=int)
     parser.add_argument('--trials_count', default=3, type=int)
     parser.add_argument('--initial_trial', default=0, type=int)
     parser.add_argument('--download', default=False, type=bool)
@@ -44,6 +45,8 @@ if __name__ == "__main__":
     parser.add_argument('--data_root', default="./datasets/pytorch-adapt/")
     parser.add_argument('--results_root', default="./results/vishook/")
     parser.add_argument('--model_names', default=["DANN"], nargs='+')
+    parser.add_argument('--lr', default=0.0005, type=float)
+    parser.add_argument('--gamma', default=0.99, type=float)
     
 
     args = parser.parse_args()

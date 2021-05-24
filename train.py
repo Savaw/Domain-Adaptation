@@ -46,7 +46,7 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
         adapter, validator=scoreValidator, val_hooks=val_hooks, checkpoint_fn=checkpoint_fn
     )
 
-    early_stopper_kwargs = {"args.patience": args.patience}
+    early_stopper_kwargs = {"patience": args.patience}
 
     start_time = datetime.now()
 
