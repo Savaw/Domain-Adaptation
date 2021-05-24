@@ -16,7 +16,7 @@ DATASET_PAIRS = [("amazon", "webcam"), ("amazon", "dslr"),
 
 def run_experiment_on_model(args, model_name):
     for trial_number in range(args.initial_trial, args.initial_trial + args.trials_count):
-        base_output_dir = f"{args.results_root}/results/vishook/{model_name}/{trial_number}"
+        base_output_dir = f"{args.results_root}/{model_name}/{trial_number}"
         os.makedirs(base_output_dir, exist_ok=True)        
 
         if not args.hp_tune:
@@ -28,26 +28,34 @@ def run_experiment_on_model(args, model_name):
                 myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
 
             for source_domain, target_domain in DATASET_PAIRS:
+                if args.source != None and args.source != source_domain:
+                    continue
+                if args.target != None and args.target != target_domain:
+                    continue
+
                 train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain)
         
         else:
             hp_values = {
-                '0.01': [0.8, 0.5],
-                '0.001': [1, 0.9, 0.8],
-                '0.0001': [1, 0.9, 0.99]
+                0.01: [0.8, 0.5],
+                0.001: [1, 0.9, 0.8],
+                0.0001: [1, 0.9, 0.99]
             }
 
             d = datetime.now()
-            hp_file = f"{base_output_dir}/e{args.max_epochs}_p{args.patience}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+            hp_file = f"{base_output_dir}/hp_e{args.max_epochs}_p{args.patience}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
             with open(hp_file, "w") as myfile:
                 myfile.write("lr, gamma, pair, source_acc, target_acc, best_score\n")
+
+            hp_best = None
+            hp_best_score = None
 
             for lr, gamma_list in hp_values.items():
                 for gamma in gamma_list:
                     hp = HP(lr=lr, gamma=gamma)
-                    print("HP:", lr, hp)
+                    print("HP:", hp)
 
-                    results_file = f"{base_output_dir}/e{hp.max_epochs}_p{hp.patience}_lr{hp.lr}_g{hp.gamma}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+                    results_file = f"{base_output_dir}/e{args.max_epochs}_p{args.patience}_lr{hp.lr}_g{hp.gamma}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
 
                     with open(results_file, "w") as myfile:
                         myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
@@ -62,8 +70,16 @@ def run_experiment_on_model(args, model_name):
                             train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain)
                             
                         pair_name = f"{source_domain[0]}2{target_domain[0]}"
-                        with open(hp_file, "w") as myfile:
+                        with open(hp_file, "a") as myfile:
                             myfile.write(f"{hp.lr}, {hp.gamma}, {pair_name}, {src_acc}, {target_acc}, {best_score}\n")
+
+                        if hp_best_score is None or hp_best_score < best_score:
+                            hp_best = hp
+                            hp_best_score = best_score
+
+            with open(hp_file, "a") as myfile:
+                myfile.write(f"\nbest: {hp_best.lr}, {hp_best.gamma}\n")
+
 
 
 
@@ -78,14 +94,15 @@ if __name__ == "__main__":
     parser.add_argument('--download', default=False, type=bool)
     parser.add_argument('--root', default="./")
     parser.add_argument('--data_root', default="./datasets/pytorch-adapt/")
-    parser.add_argument('--results_root', default="./results/vishook/")
+    parser.add_argument('--results_root', default="./results/")
     parser.add_argument('--model_names', default=["DANN"], nargs='+')
     parser.add_argument('--lr', default=0.0005, type=float)
     parser.add_argument('--gamma', default=0.99, type=float)
     parser.add_argument('--hp_tune', default=False, type=bool)
     parser.add_argument('--source', default=None)
-    parser.add_argument('--target', default=None)
-    
+    parser.add_argument('--target', default=None) 
+    parser.add_argument('--vishook_frequency', default=5, type=int)
+       
 
     args = parser.parse_args()
 
@@ -99,3 +116,6 @@ if __name__ == "__main__":
             continue
 
         run_experiment_on_model(args, model_enum)
+
+# Tune
+# python main.py --max_epochs 1 --trials_count 1 --model_names SYMNET --source amazon --target webcam --hp_tune True --vishook_frequency 10

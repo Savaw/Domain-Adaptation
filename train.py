@@ -14,7 +14,6 @@ from models import get_model
 from vis_hook import VizHook
 
 def train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain):
-
     pair_name = f"{source_domain[0]}2{target_domain[0]}"
     output_dir = os.path.join(base_output_dir, pair_name)
     os.makedirs(output_dir, exist_ok=True)
@@ -37,10 +36,11 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
     scoreValidator = ScoreHistory(IMValidator())
     sourceAccuracyValidator = AccuracyValidator()
     targetAccuracyValidator = AccuracyValidator(key_map={"target_val_with_labels": "src_val"})
+
+    
     val_hooks = [ScoreHistory(sourceAccuracyValidator), 
                 ScoreHistory(targetAccuracyValidator),
-                VizHook(output_dir=output_dir)]
-
+                VizHook(output_dir=output_dir, frequency=args.vishook_frequency)]
     
     trainer = Ignite(
         adapter, validator=scoreValidator, val_hooks=val_hooks, checkpoint_fn=checkpoint_fn
