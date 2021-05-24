@@ -57,12 +57,12 @@ def get_model(model_name, hp: HP, data_root, source_domain):
 
     elif model_name ==  DAModels.MMD:
         models = Models({"G": G, "C": C})
-        hook_kwargs = {"loss_fn": MMDLoss}
+        hook_kwargs = {"loss_fn": MMDLoss()}
         adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers, hook_kwargs=hook_kwargs)
 
     elif model_name == DAModels.CORAL:
         models = Models({"G": G, "C": C})
-        hook_kwargs = {"loss_fn": CORALLoss}
+        hook_kwargs = {"loss_fn": CORALLoss()}
         adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers, hook_kwargs=hook_kwargs)
 
     # elif model_name ==  DAModels.SOURCE:

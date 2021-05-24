@@ -54,7 +54,7 @@ def run_experiment_on_model(args, model_name):
                         _, _, best_score = \
                             train(args, model_name, hp, base_output_dir, hp_file, source_domain, target_domain)
                             
-                        if best_score is not None and hp_best_score is None or hp_best_score < best_score:
+                        if best_score is not None and (hp_best_score is None or hp_best_score < best_score):
                             hp_best = hp
                             hp_best_score = best_score
 
