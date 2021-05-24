@@ -14,6 +14,11 @@ from models import get_model
 from vis_hook import VizHook
 
 def train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain):
+    if args.source != None and args.source != source_domain:
+        return None, None, None
+    if args.target != None and args.target != target_domain:
+        return None, None, None
+
     pair_name = f"{source_domain[0]}2{target_domain[0]}"
     output_dir = os.path.join(base_output_dir, pair_name)
     os.makedirs(output_dir, exist_ok=True)
@@ -77,9 +82,13 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
     target_score = val_hooks[1].score_history[-1]
     print("Target acc:", target_score)
 
-    with open(results_file, "a") as myfile:
-        myfile.write(
-            f"{pair_name}, {src_score}, {target_score}, {best_epoch}, {training_time.seconds}\n")
+    if args.hp_tune:
+        with open(results_file, "a") as myfile:
+            myfile.write(f"{hp.lr}, {hp.gamma}, {pair_name}, {target_score}, {best_epoch}, {best_score}\n")
+    else:
+        with open(results_file, "a") as myfile:
+            myfile.write(
+                f"{pair_name}, {src_score}, {target_score}, {best_epoch}, {training_time.seconds}\n")
 
     del adapter
     gc.collect()

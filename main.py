@@ -28,11 +28,6 @@ def run_experiment_on_model(args, model_name):
                 myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
 
             for source_domain, target_domain in DATASET_PAIRS:
-                if args.source != None and args.source != source_domain:
-                    continue
-                if args.target != None and args.target != target_domain:
-                    continue
-
                 train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain)
         
         else:
@@ -55,25 +50,11 @@ def run_experiment_on_model(args, model_name):
                     hp = HP(lr=lr, gamma=gamma)
                     print("HP:", hp)
 
-                    results_file = f"{base_output_dir}/e{args.max_epochs}_p{args.patience}_lr{hp.lr}_g{hp.gamma}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
-
-                    with open(results_file, "w") as myfile:
-                        myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
-                        
                     for source_domain, target_domain in DATASET_PAIRS:
-                        if args.source != None and args.source != source_domain:
-                            continue
-                        if args.target != None and args.target != target_domain:
-                            continue
-
-                        src_acc, target_acc, best_score = \
-                            train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain)
+                        _, _, best_score = \
+                            train(args, model_name, hp, base_output_dir, hp_file, source_domain, target_domain)
                             
-                        pair_name = f"{source_domain[0]}2{target_domain[0]}"
-                        with open(hp_file, "a") as myfile:
-                            myfile.write(f"{hp.lr}, {hp.gamma}, {pair_name}, {src_acc}, {target_acc}, {best_score}\n")
-
-                        if hp_best_score is None or hp_best_score < best_score:
+                        if best_score is not None and hp_best_score is None or hp_best_score < best_score:
                             hp_best = hp
                             hp_best_score = best_score
 
@@ -118,4 +99,7 @@ if __name__ == "__main__":
         run_experiment_on_model(args, model_enum)
 
 # Tune
-# python main.py --max_epochs 1 --trials_count 1 --model_names SYMNET --source amazon --target webcam --hp_tune True --vishook_frequency 10
+# python main.py --max_epochs 10 --patience 3 --trials_count 1 --model_names SYMNET MCD --source amazon --target webcam --hp_tune True --vishook_frequency 10
+
+# Coral
+# CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 60 --patience 10 --trials_count 3 --model_names CORAL --num_workers 1 --batch_size 40
