@@ -11,7 +11,7 @@ class DAModels(Enum):
     DANN = "DANN"
     MCD = "MCD"
     CDAN = "CDAN"
-    SOURCE = "SOURCE"
+    # SOURCE = "SOURCE"
     MMD = "MMD"
     CORAL = "CORAL"
     SYMNET = "SYMNET"

@@ -65,23 +65,10 @@ def get_model(model_name, hp: HP, data_root, source_domain):
         hook_kwargs = {"loss_fn": CORALLoss}
         adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers, hook_kwargs=hook_kwargs)
 
-    elif model_name ==  DAModels.SOURCE:
-        models = Models({"G": G, "C": C})
-        adapter= ClassifierAdapter(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
+    # elif model_name ==  DAModels.SOURCE:
+    #     models = Models({"G": G, "C": C})
+    #     adapter= ClassifierAdapter(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
 
 
-    if model_name in [DAModels.SYMNET, DAModels.MCD]:
-        def del_model_params():
-            del G
-            del C
-            del D
-            del C1
-            del C_combined
-    else:
-        def del_model_params():
-            del G
-            del C
-            del D
-       
-    return adapter, del_model_params
+    return adapter
 

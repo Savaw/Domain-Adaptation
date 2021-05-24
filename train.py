@@ -31,7 +31,7 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
                            val_names=["src_train", "target_train", "src_val", "target_val",
                                         "target_train_with_labels", "target_val_with_labels"])
 
-    adapter, del_model_params = get_model(model_name, hp, args.data_root, source_domain)
+    adapter = get_model(model_name, hp, args.data_root, source_domain)
     
     checkpoint_fn = CheckpointFnCreator(dirname=f"{output_dir}/saved_models", require_empty=False)
     scoreValidator = ScoreHistory(IMValidator())
@@ -81,7 +81,6 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
         myfile.write(
             f"{pair_name}, {src_score}, {target_score}, {best_epoch}, {training_time.seconds}\n")
 
-    del_model_params()
-
+    del adapter
     gc.collect()
     torch.cuda.empty_cache()
