@@ -7,7 +7,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from data_loader import load_data, get_input_and_labels_from_batch_ds
+from tf.data_loader import load_data, get_input_and_labels_from_batch_ds
 
 gpu_options = tf.compat.v1.GPUOptions(allow_growth=True)
 session = tf.compat.v1.InteractiveSession(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
@@ -40,7 +40,7 @@ MODEL_NAMES = [
     ]
 
 d = datetime.now()
-results_file = f"results/e{epochs}_b{batch_size}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+results_file = f"../results/e{epochs}_b{batch_size}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
 
 with open(results_file, "w") as myfile:
     myfile.write("model_name, acc, disc_acc, val_acc, source_scoure, val_score, target_score\n")

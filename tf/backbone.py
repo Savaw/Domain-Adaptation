@@ -12,7 +12,7 @@ import tensorflow as tf
 
 def get_resnet():
     # if you want to download weights, remove weights param in ResNet40 and remove this line
-    WEIGHTS_PATH = 'model-weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
+    WEIGHTS_PATH = '../model-weights/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
 
     resnet50 = ResNet50(include_top=False, input_shape=(224, 224, 3), pooling="avg", weights=WEIGHTS_PATH, classes=31)
 
@@ -31,7 +31,7 @@ def get_resnet():
     last_block = Model(inputs, x)
 
 
-    def load_resnet50(path="model-weights/resnet50_last_block.hdf5"):
+    def load_resnet50(path="../model-weights/resnet50_last_block.hdf5"):
         model = load_model(path, compile=False)
         for i in range(len(model.layers)):
             if model.layers[i].__class__.__name__ == "BatchNormalization":
@@ -39,7 +39,7 @@ def get_resnet():
         return model
 
     # last_block.summary()
-    last_block.save("model-weights/resnet50_last_block.hdf5")
+    last_block.save("../model-weights/resnet50_last_block.hdf5")
 
     return first_blocks, last_block, load_resnet50
 
