@@ -2,22 +2,27 @@
 
 ## Prepare Environment
 
-Install the requirements from `requirements.txt`.
+Install the requirements using conda from `requirements-conda.txt` (or using pip from `requirements.txt`). 
 
-Python version: 3.8
+*My setting:* conda 22.11.1 with Python 3.8
 
-Having trouble with installing torch?
-Use [this link](https://pytorch.org/get-started/previous-versions/) to find the currect version for your device.
+If you have trouble with installing torch check [this link](https://pytorch.org/get-started/previous-versions/)
+to find the currect version for your device.
 
 ## Run
 
-- Train example which will perform MMD and CORAL adaptation on all 6 domain adaptations tasks from office31 dataset:
+1. Go to `src` directory.
+2. Run `main.py` with appropriate arguments.
+
+Examples:
+
+- Perform MMD and CORAL adaptation on all 6 domain adaptations tasks from office31 dataset:
 
 ```bash
 python main.py --model_names MMD CORAL --batch_size 32 
 ```
 
-- Train example for tuning parameters of DANN model
+- Tuning parameters of DANN model
 
 ```bash
 python main.py --max_epochs 10 --patience 3 --trials_count 1 --model_names DANN --num_workers 2 --batch_size 32 --source amazon --target webcam --hp_tune True 
@@ -92,4 +97,4 @@ The main code for project is located in the `src/` directory.
 
 ## Acknowledgements
 
-[Pytorch adapt](https://github.com/KevinMusgrave/pytorch-adapt/tree/0b0fb63b04c9bd7e2cc6cf45314c7ee9d6e391c0)
+[Pytorch Adapt](https://github.com/KevinMusgrave/pytorch-adapt/tree/0b0fb63b04c9bd7e2cc6cf45314c7ee9d6e391c0)
