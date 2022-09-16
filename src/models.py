@@ -45,7 +45,7 @@ def get_model(model_name, hp: HP, source_checkpoint_dir):
 
     elif model_name ==  DAModels.CDAN:
         models = Models({"G": G, "C": C, "D": D})
-        misc = Misc({"feature_combiner": RandomizedDotProduct([128, 31], 128)})
+        misc = Misc({"feature_combiner": RandomizedDotProduct([2048, 31], 2048)})
         adapter = CDAN(models=models, misc=misc, optimizers=optimizers, lr_schedulers=lr_schedulers)
 
     elif model_name ==  DAModels.MCD:

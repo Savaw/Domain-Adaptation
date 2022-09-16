@@ -6,9 +6,6 @@ from pytorch_adapt.adapters import DANN, MCD, VADA, CDAN, RTN, ADDA, Aligner, Sy
 from pytorch_adapt.containers import Models, Optimizers, LRSchedulers
 from pytorch_adapt.models import Discriminator,  office31C, office31G
 from pytorch_adapt.containers import Misc
-from pytorch_adapt.layers import RandomizedDotProduct
-from pytorch_adapt.layers import MultipleModels, CORALLoss, MMDLoss
-from pytorch_adapt.utils import common_functions
 from pytorch_adapt.containers import LRSchedulers
 
 from classifier_adapter import ClassifierAdapter

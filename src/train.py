@@ -102,7 +102,7 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
     else:
         with open(results_file, "a") as myfile:
             myfile.write(
-                f"{pair_name}, {src_score}, {target_score}, {best_epoch}, {best_score}, {training_time.seconds}, ")
+                f"{pair_name}, {src_score}, {target_score}, {best_epoch}, {best_score}, {training_time.seconds}, {hp.lr}, {hp.gamma},")
 
     del adapter
     gc.collect()

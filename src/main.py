@@ -24,15 +24,61 @@ def run_experiment_on_model(args, model_name, trial_number):
     base_output_dir = f"{args.results_root}/{model_name}/{trial_number}"
     os.makedirs(base_output_dir, exist_ok=True)        
 
+    hp_map = {
+        'DANN': {
+            'a2d': (5e-05, 0.99),
+            'a2w': (5e-05, 0.99),
+            'd2a': (0.0001, 0.9),
+            'd2w': (5e-05, 0.99),
+            'w2a': (0.0001, 0.99), 
+            'w2d': (0.0001, 0.99),
+        },
+        'CDAN': {
+            'a2d': (1e-05, 1),
+            'a2w': (1e-05, 1),
+            'd2a': (1e-05, 0.99),
+            'd2w': (1e-05, 0.99),
+            'w2a': (0.0001, 0.99),
+            'w2d': (5e-05, 0.99),
+        },
+        'MMD': {
+            'a2d': (5e-05, 1),
+            'a2w': (5e-05, 0.99),
+            'd2a': (0.0001, 0.99),
+            'd2w': (5e-05, 0.9),
+            'w2a': (0.0001, 0.99),
+            'w2d': (1e-05, 0.99),
+        },
+        'MCD': {
+            'a2d': (1e-05, 0.9),
+            'a2w': (0.0001, 1),
+            'd2a': (1e-05, 0.9),
+            'd2w': (1e-05, 0.99),
+            'w2a': (1e-05, 0.9),
+            'w2d': (5*1e-6, 0.99),
+        },
+        'CORAL': {
+            'a2d': (1e-05, 0.99),
+            'a2w': (1e-05, 1),
+            'd2a': (5*1e-6, 0.99),
+            'd2w': (0.0001, 0.99),
+            'w2a': (1e-5, 0.99),
+            'w2d': (0.0001, 0.99),
+        },
+    }
     if not args.hp_tune:
-        hp = HP(lr=args.lr, gamma=args.gamma)
 
         d = datetime.now()
-        results_file = f"{base_output_dir}/e{args.max_epochs}_p{args.patience}_lr{hp.lr}_g{hp.gamma}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+        results_file = f"{base_output_dir}/e{args.max_epochs}_p{args.patience}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
         with open(results_file, "w") as myfile:
-            myfile.write("pair, source_acc, target_acc, best_epoch, best_score, time, cur, peak\n")
+            myfile.write("pair, source_acc, target_acc, best_epoch, best_score, time, cur, peak, lr, gamma\n")
 
         for source_domain, target_domain in DATASET_PAIRS:
+            pair_name = f"{source_domain[0]}2{target_domain[0]}"
+
+            hp_parmas = hp_map[DAModels.CDAN.name][pair_name]
+            hp = HP(lr=hp_parmas[0], gamma=hp_parmas[1])
+
             tracemalloc.start()
 
             train_fn(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain)
@@ -45,14 +91,16 @@ def run_experiment_on_model(args, model_name, trial_number):
 
     
     else:
-        gamma_list = [1, 0.99, 0.9, 0.8]
-        lr_list = [1e-5, 3*1e-5, 1e-4, 3*1e-4]
-        # hp_values = {
-        #     1e-5: [1, 0.99, 0.9, 0.8]
-        #     5*1e-5: [1, 0.99, 0.9, 0.8],
-        #     5*1e-4: [1, 0.99, 0.9, 0.8],
-        #     1e-4: [1, 0.99, 0.9, 0.8],
-        # }
+        # gamma_list = [1, 0.99, 0.9, 0.8]
+        # lr_list = [1e-5, 3*1e-5, 1e-4, 3*1e-4]
+        hp_values = {
+            1e-4: [0.99, 0.9],
+            1e-5: [0.99, 0.9],
+            5*1e-5: [0.99, 0.9],
+            5*1e-6: [0.99]
+            # 5*1e-4: [1, 0.99],
+            # 1e-3: [0.99, 0.9, 0.8],
+        }
 
         d = datetime.now()
         hp_file = f"{base_output_dir}/hp_e{args.max_epochs}_p{args.patience}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
@@ -62,8 +110,8 @@ def run_experiment_on_model(args, model_name, trial_number):
         hp_best = None
         hp_best_score = None
 
-        # for lr, gamma_list in hp_values.items():
-        for lr in lr_list:
+        for lr, gamma_list in hp_values.items():
+        # for lr in lr_list:
             for gamma in gamma_list:
                 hp = HP(lr=lr, gamma=gamma)
                 print("HP:", hp)
@@ -91,9 +139,9 @@ if __name__ == "__main__":
     parser.add_argument('--trials_count', default=3, type=int)
     parser.add_argument('--initial_trial', default=0, type=int)
     parser.add_argument('--download', default=False, type=bool)
-    parser.add_argument('--root', default="./")
-    parser.add_argument('--data_root', default="./datasets/pytorch-adapt/")
-    parser.add_argument('--results_root', default="./results/")
+    parser.add_argument('--root', default="../")
+    parser.add_argument('--data_root', default="../datasets/pytorch-adapt/")
+    parser.add_argument('--results_root', default="../results/")
     parser.add_argument('--model_names', default=["DANN"], nargs='+')
     parser.add_argument('--lr', default=0.0001, type=float)
     parser.add_argument('--gamma', default=0.99, type=float)
@@ -101,9 +149,8 @@ if __name__ == "__main__":
     parser.add_argument('--source', default=None)
     parser.add_argument('--target', default=None) 
     parser.add_argument('--vishook_frequency', default=5, type=int)
-    parser.add_argument('--source_checkpoint_base_dir', default='./results/DAModels.SOURCE/')
+    parser.add_argument('--source_checkpoint_base_dir', default='../results/DAModels.SOURCE/')
     parser.add_argument('--source_checkpoint_trial_number', default=-1, type=int)
-       # ./results//DAModels.SOURCE/100/a2w
 
     args = parser.parse_args()
 
@@ -156,7 +203,29 @@ if __name__ == "__main__":
 ## TEST
 # CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 1 --patience 1 --trials_count 1 --initial_trial 100 --model_names SOURCE --lr 0.0005 --gamma 0.99 --num_workers 1 --batch_size 64 --vishook_frequency 10
 # CUDA_VISIBLE_DEVICES=1 python main.py --max_epochs 1 --patience 1 --trials_count 1 --initial_trial 100 --model_names DANN --lr 0.0005 --gamma 0.99 --num_workers 1 --batch_size 64 --vishook_frequency 10
+
+
 ## REAL
 # CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 60 --patience 3 --trials_count 3 --initial_trial 1000 --model_names SOURCE --lr 0.0005 --gamma 0.99 --num_workers 2 --batch_size 64 --vishook_frequency 10
-# CUDA_VISIBLE_DEVICES=1 python main.py --max_epochs 60 --patience 10 --trials_count 3 --initial_trial 1000 --model_names DANN CDAN MCD CORAL MMD --lr 0.00001 --gamma 0.99 --num_workers 2 --batch_size 32 --vishook_frequency 10
+### HP tune a2w
+# CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 10 --patience 3 --trials_count 1 --initial_trial 999 --model_names DANN CDAN MMD --num_workers 2 --batch_size 32 --vishook_frequency 10 --source amazon --target webcam --hp_tune True --source_checkpoint_trial_number 1000
+# CUDA_VISIBLE_DEVICES=1 python main.py --max_epochs 10 --patience 3 --trials_count 1 --initial_trial 999 --model_names MCD CORAL MMD --num_workers 2 --batch_size 32 --vishook_frequency 10 --source amazon --target webcam --hp_tune True --source_checkpoint_trial_number 1000
+### HP tune d2a
+# CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 10 --patience 3 --trials_count 1 --initial_trial 999 --model_names DANN CDAN MMD --num_workers 2 --batch_size 32 --vishook_frequency 10 --source dslr --target amazon --hp_tune True --source_checkpoint_trial_number 1000
+# CUDA_VISIBLE_DEVICES=1 python main.py --max_epochs 10 --patience 3 --trials_count 1 --initial_trial 999 --model_names MCD CORAL MMD --num_workers 2 --batch_size 32 --vishook_frequency 10 --source dslr --target amazon --hp_tune True --source_checkpoint_trial_number 1000
+### train
+# CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 60 --patience 10 --trials_count 5 --initial_trial 1000 --model_names DANN CDAN MMD --num_workers 2 --batch_size 32 --vishook_frequency 10 --source_checkpoint_trial_number 1000
+# CUDA_VISIBLE_DEVICES=1 python main.py --max_epochs 60 --patience 10 --trials_count 5 --initial_trial 1000 --model_names MCD CORAL --num_workers 2 --batch_size 32 --vishook_frequency 10 --source_checkpoint_trial_number 1000
 
+
+
+## REAL
+# CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 10 --patience 3 --trials_count 3 --initial_trial 2000 --model_names SOURCE --lr 0.0005 --gamma 0.99 --num_workers 2 --batch_size 128 --vishook_frequency 10
+### HP tune a2w
+# CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 10 --patience 3 --trials_count 1 --initial_trial 1999 --model_names DANN CDAN MMD --num_workers 2 --batch_size 32 --vishook_frequency 10 --source amazon --target webcam --hp_tune True --source_checkpoint_trial_number 2001
+# CUDA_VISIBLE_DEVICES=1 python main.py --max_epochs 10 --patience 3 --trials_count 1 --initial_trial 1999 --model_names MCD CORAL MMD --num_workers 2 --batch_size 32 --vishook_frequency 10 --source amazon --target webcam --hp_tune True --source_checkpoint_trial_number 2001
+### HP tune d2a
+# CUDA_VISIBLE_DEVICES=1 python main.py --max_epochs 10 --patience 3 --trials_count 1 --initial_trial 1999 --model_names MCD DANN CDAN MMD CORAL --num_workers 2 --batch_size 32 --vishook_frequency 10 --source dslr --target amazon --hp_tune True --source_checkpoint_trial_number 2001 
+### train
+# CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 60 --patience 10 --trials_count 5 --initial_trial 2000 --model_names MCD DANN CDAN --num_workers 2 --batch_size 32 --vishook_frequency 10 --source_checkpoint_trial_number 2001
+# CUDA_VISIBLE_DEVICES=1 python main.py --max_epochs 60 --patience 10 --trials_count 5 --initial_trial 2000 --model_names MMD CORAL --num_workers 2 --batch_size 32 --vishook_frequency 10 --source_checkpoint_trial_number 2001
