@@ -34,7 +34,7 @@ The main code for project is located in the `src/` directory.
 
     - `max_epochs`: Maximum number of epochs to run the training
 
-    - `patience`: Maximum number of epochs to continue if no improvement is seen
+    - `patience`: Maximum number of epochs to continue if no improvement is seen (Early stopping parameter)
 
     - `batch_size`
 

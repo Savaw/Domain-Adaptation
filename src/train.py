@@ -37,8 +37,10 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
                         val_names=["src_train", "target_train", "src_val", "target_val",
                                         "target_train_with_labels", "target_val_with_labels"])
 
-    source_checkpoint_dir = f"{args.source_checkpoint_base_dir}/{args.source_checkpoint_trial_number}/{pair_name}/saved_models"
+    source_checkpoint_dir = None if not args.source_checkpoint_base_dir else \
+        f"{args.source_checkpoint_base_dir}/{args.source_checkpoint_trial_number}/{pair_name}/saved_models"
     print("source_checkpoint_dir", source_checkpoint_dir)
+
     adapter = get_model(model_name, hp, source_checkpoint_dir, args.data_root, source_domain)
     
     checkpoint_fn = CheckpointFnCreator(dirname=f"{output_dir}/saved_models", require_empty=False)
@@ -48,7 +50,6 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
     validators = {
         "entropy": EntropyValidator(),
         "diversity": DiversityValidator(),
-        # "accuracy": sourceAccuracyValidator,
     }
     validator = ScoreHistory(MultipleValidators(validators))
 
