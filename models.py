@@ -13,7 +13,7 @@ from pytorch_adapt.containers import LRSchedulers
 
 from classifier_adapter import ClassifierAdapter
 
-from utils import HP
+from utils import HP, DAModels
 
 import copy
 
@@ -37,26 +37,16 @@ def get_model(model_name, hp: HP, data_root, source_domain):
         del C
         del D
 
-    if model_name == "DANN":
+    if model_name == DAModels.DANN:
         models = Models({"G": G, "C": C, "D": D})
         adapter = DANN(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
 
-    elif model_name == "CDAN":
+    elif model_name ==  DAModels.CDAN:
         models = Models({"G": G, "C": C, "D": D})
         misc = Misc({"feature_combiner": RandomizedDotProduct([2048, 31], 2048)})
         adapter = CDAN(models=models, misc=misc, optimizers=optimizers, lr_schedulers=lr_schedulers)
 
-    elif model_name == "MMD":
-        hook_kwargs = {"loss_fn": MMDLoss}
-        models = Models({"G": G, "C": C})
-        adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
-
-    elif model_name == "MMD":
-        models = Models({"G": G, "C": C})
-        hook_kwargs = {"loss_fn": CORALLoss}
-        adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
-
-    elif model_name == "MCD":
+    elif model_name ==  DAModels.MCD:
         C1 = common_functions.reinit(copy.deepcopy(C))
         C_combined = MultipleModels(C, C1)
         models = Models({"G": G, "C": C_combined})
@@ -69,7 +59,17 @@ def get_model(model_name, hp: HP, data_root, source_domain):
             del C1
             del C_combined
 
-    elif model_name == "SourceOnly":
+    elif model_name ==  DAModels.MMD:
+        models = Models({"G": G, "C": C})
+        hook_kwargs = {"loss_fn": MMDLoss}
+        adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers, hook_kwargs=hook_kwargs)
+
+    elif model_name == DAModels.CORAL:
+        models = Models({"G": G, "C": C})
+        hook_kwargs = {"loss_fn": CORALLoss}
+        adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers, hook_kwargs=hook_kwargs)
+
+    elif model_name ==  DAModels.Source:
         models = Models({"G": G, "C": C})
         adapter= ClassifierAdapter(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
 

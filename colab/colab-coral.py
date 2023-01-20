@@ -138,7 +138,7 @@ for trial_number in range(TRIAL_COUNT):
           models = Models({"G": G, "C": C})
           coral_loss = CORALLoss
           hook_kwargs = {"loss_fn": coral_loss}
-          adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
+          adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers, hook_kwargs=hook_kwargs)
 
         elif model_name == "mcd":
           C1 = common_functions.reinit(copy.deepcopy(C))

@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime
 from train import train
-from utils import HP
+from utils import HP, DAModels
 
 logging.basicConfig()
 logging.getLogger("pytorch-adapt").setLevel(logging.WARNING)
@@ -34,12 +34,12 @@ def run_experiment_on_model(args, model_name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--max_epochs', default=60)
-    parser.add_argument('--patience', default=10)
-    parser.add_argument('--batch_size', default=32)
-    parser.add_argument('--trials_count', default=3)
-    parser.add_argument('--initial_trial', default=0)
-    parser.add_argument('--download', default=False)
+    parser.add_argument('--max_epochs', default=60, type=int)
+    parser.add_argument('--patience', default=10, type=int)
+    parser.add_argument('--batch_size', default=32, type=int)
+    parser.add_argument('--trials_count', default=3, type=int)
+    parser.add_argument('--initial_trial', default=0, type=int)
+    parser.add_argument('--download', default=False, type=bool)
     parser.add_argument('--root', default="./")
     parser.add_argument('--data_root', default="./datasets/pytorch-adapt/")
     parser.add_argument('--results_root', default="./results/vishook/")
@@ -51,4 +51,10 @@ if __name__ == "__main__":
     print(args)
 
     for model_name in args.model_names:
-        run_experiment_on_model(args, args.model_name)
+        try:
+            model_enum = DAModels(model_name)
+        except ValueError:
+            logging.warning(f"Model {model_name} not found. skipping...")
+            continue
+
+        run_experiment_on_model(args, model_enum)

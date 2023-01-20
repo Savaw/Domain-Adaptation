@@ -1,6 +1,16 @@
 from dataclasses import dataclass
+from enum import Enum  
 
 @dataclass
 class HP:
-    lr = 0.0005
-    gamma = 0.99
+    lr:float = 0.0005
+    gamma:float = 0.99
+
+
+class DAModels(Enum):
+    DANN = "DANN"
+    MCD = "MCD"
+    CDAN = "CDAN"
+    Source = "Source"
+    MMD = "MMD"
+    CORAL = "CORAL"
