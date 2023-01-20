@@ -84,3 +84,5 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
     del adapter
     gc.collect()
     torch.cuda.empty_cache()
+
+    return src_score, target_score, best_score

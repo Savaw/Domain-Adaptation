@@ -19,17 +19,54 @@ def run_experiment_on_model(args, model_name):
         base_output_dir = f"{args.results_root}/results/vishook/{model_name}/{trial_number}"
         os.makedirs(base_output_dir, exist_ok=True)
 
-        d = datetime.now()
-        results_file = f"{base_output_dir}/{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
 
         with open(results_file, "w") as myfile:
             myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
 
-        hp = HP(lr=args.lr, gamma=args.gamma)
+        if not args.hp_tune:
+            hp = HP(lr=args.lr, gamma=args.gamma)
 
-        for source_domain, target_domain in DATASET_PAIRS:
-            logging.info(f"Running experiment on model {model_name} trail {trial_number}/{args.trials_count} pair {source_domain}2{target_domain}")
-            train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain)
+            d = datetime.now()
+            results_file = f"{base_output_dir}/e{hp.max_epochs}_p{hp.patience}_lr{hp.lr}_g{hp.gamma}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+
+            for source_domain, target_domain in DATASET_PAIRS:
+                train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain)
+        
+        else:
+            hp_values = {
+                '0.01': [0.8, 0.5],
+                '0.001': [1, 0.9, 0.8],
+                '0.0001': [1, 0.9, 0.99]
+            }
+
+            d = datetime.now()
+            hp_file = f"{base_output_dir}/e{hp.max_epochs}_p{hp.patience}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+            with open(hp_file, "w") as myfile:
+                myfile.write("lr, gamma, pair, source_acc, target_acc, best_score\n")
+
+            for lr, gamma_list in hp_values.items():
+                for gamma in gamma_list:
+                    hp = HP(lr=lr, gamma=gamma)
+                    print("HP:", lr, hp)
+
+                    results_file = f"{base_output_dir}/e{hp.max_epochs}_p{hp.patience}_lr{hp.lr}_g{hp.gamma}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+
+                    with open(results_file, "w") as myfile:
+                        myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
+                        
+                    for source_domain, target_domain in DATASET_PAIRS:
+                        if args.source != None and args.source != source_domain:
+                            continue
+                        if args.target != None and args.target != target_domain:
+                            continue
+
+                        src_acc, target_acc, best_score = \
+                            train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain)
+                            
+                        pair_name = f"{source_domain[0]}2{target_domain[0]}"
+                        with open(hp_file, "w") as myfile:
+                            myfile.write(f"{hp.lr}, {hp.gamma}, {pair_name}, {src_acc}, {target_acc}, {best_score}\n")
+
 
 
 if __name__ == "__main__":
@@ -47,6 +84,9 @@ if __name__ == "__main__":
     parser.add_argument('--model_names', default=["DANN"], nargs='+')
     parser.add_argument('--lr', default=0.0005, type=float)
     parser.add_argument('--gamma', default=0.99, type=float)
+    parser.add_argument('--hp_tune', default=False, type=bool)
+    parser.add_argument('--source', default=None)
+    parser.add_argument('--target', default=None)
     
 
     args = parser.parse_args()
