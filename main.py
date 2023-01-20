@@ -23,7 +23,7 @@ def run_experiment_on_model(args, model_name):
             hp = HP(lr=args.lr, gamma=args.gamma)
 
             d = datetime.now()
-            results_file = f"{base_output_dir}/e{hp.max_epochs}_p{hp.patience}_lr{hp.lr}_g{hp.gamma}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+            results_file = f"{base_output_dir}/e{args.max_epochs}_p{args.patience}_lr{hp.lr}_g{hp.gamma}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
             with open(results_file, "w") as myfile:
                 myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
 
@@ -38,7 +38,7 @@ def run_experiment_on_model(args, model_name):
             }
 
             d = datetime.now()
-            hp_file = f"{base_output_dir}/e{hp.max_epochs}_p{hp.patience}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+            hp_file = f"{base_output_dir}/e{args.max_epochs}_p{args.patience}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
             with open(hp_file, "w") as myfile:
                 myfile.write("lr, gamma, pair, source_acc, target_acc, best_score\n")
 
