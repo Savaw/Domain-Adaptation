@@ -2,7 +2,7 @@
 import torch
 import os
 
-from pytorch_adapt.adapters import DANN, MCD, VADA, CDAN, RTN, ADDA, Aligner
+from pytorch_adapt.adapters import DANN, MCD, VADA, CDAN, RTN, ADDA, Aligner, SymNets
 from pytorch_adapt.containers import Models, Optimizers, LRSchedulers
 from pytorch_adapt.models import Discriminator,  office31C, office31G
 from pytorch_adapt.containers import Misc
@@ -32,10 +32,7 @@ def get_model(model_name, hp: HP, data_root, source_domain):
     optimizers = Optimizers((torch.optim.Adam, {"lr": hp.lr}))
     lr_schedulers = LRSchedulers((torch.optim.lr_scheduler.ExponentialLR, {"gamma": hp.gamma}))
     
-    def del_model_params():
-        del G
-        del C
-        del D
+
 
     if model_name == DAModels.DANN:
         models = Models({"G": G, "C": C, "D": D})
@@ -52,12 +49,11 @@ def get_model(model_name, hp: HP, data_root, source_domain):
         models = Models({"G": G, "C": C_combined})
         adapter= MCD(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
 
-        def del_model_params():
-            del G
-            del C
-            del D
-            del C1
-            del C_combined
+    elif model_name ==  DAModels.SYMNET:
+        C1 = common_functions.reinit(copy.deepcopy(C))
+        C_combined = MultipleModels(C, C1)
+        models = Models({"G": G, "C": C_combined})
+        adapter= SymNets(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
 
     elif model_name ==  DAModels.MMD:
         models = Models({"G": G, "C": C})
@@ -69,9 +65,23 @@ def get_model(model_name, hp: HP, data_root, source_domain):
         hook_kwargs = {"loss_fn": CORALLoss}
         adapter= Aligner(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers, hook_kwargs=hook_kwargs)
 
-    elif model_name ==  DAModels.Source:
+    elif model_name ==  DAModels.SOURCE:
         models = Models({"G": G, "C": C})
         adapter= ClassifierAdapter(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
 
+
+    if model_name in [DAModels.SYMNET, DAModels.MCD]:
+        def del_model_params():
+            del G
+            del C
+            del D
+            del C1
+            del C_combined
+    else:
+        def del_model_params():
+            del G
+            del C
+            del D
+       
     return adapter, del_model_params
 
