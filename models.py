@@ -13,7 +13,7 @@ from pytorch_adapt.containers import LRSchedulers
 
 from classifier_adapter import ClassifierAdapter
 
-from .utils import HP
+from utils import HP
 
 import copy
 

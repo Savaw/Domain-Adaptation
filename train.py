@@ -1,27 +1,19 @@
-import logging
 
 import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
 import torch
-import umap
 import os
 import gc
 from datetime import datetime
 
-from pytorch_adapt.adapters import DANN
-from pytorch_adapt.containers import Models, Optimizers, LRSchedulers
 from pytorch_adapt.datasets import DataloaderCreator, get_office31
 from pytorch_adapt.frameworks.ignite import CheckpointFnCreator, Ignite
-from pytorch_adapt.models import Discriminator, office31C, office31G
 from pytorch_adapt.validators import AccuracyValidator, IMValidator, ScoreHistory
 
-from .models import get_model
+from models import get_model
 
 from vis_hook import VizHook
 
-
-def train(args, model_name, hp, data_root, base_output_dir, results_file, source_domain, target_domain):
+def train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain):
 
     pair_name = f"{source_domain[0]}2{target_domain[0]}"
     output_dir = os.path.join(base_output_dir, pair_name)
@@ -30,7 +22,7 @@ def train(args, model_name, hp, data_root, base_output_dir, results_file, source
     print("output dir:", output_dir)
 
     datasets = get_office31([source_domain], [target_domain],
-                            folder=data_root,
+                            folder=args.data_root,
                             return_target_with_labels=True,
                             download=args.download)
     dc = DataloaderCreator(batch_size=args.batch_size,
@@ -39,7 +31,7 @@ def train(args, model_name, hp, data_root, base_output_dir, results_file, source
                            val_names=["src_train", "target_train", "src_val", "target_val",
                                         "target_train_with_labels", "target_val_with_labels"])
 
-    adapter, del_model_params = get_model(model_name, hp, data_root, source_domain)
+    adapter, del_model_params = get_model(model_name, hp, args.data_root, source_domain)
     
     checkpoint_fn = CheckpointFnCreator(dirname=f"{output_dir}/saved_models", require_empty=False)
     scoreValidator = ScoreHistory(IMValidator())

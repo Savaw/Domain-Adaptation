@@ -1,13 +1,10 @@
 
-import logging
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import torch
 import umap
-import os
-import gc
 from datetime import datetime
 
 from pytorch_adapt.adapters import DANN
