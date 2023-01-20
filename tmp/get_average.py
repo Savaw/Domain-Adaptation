@@ -40,10 +40,16 @@ print()
 latex_table = ""
 header = [pair for pair in pairs if pair[0] != pair[-1]]
 
+name_map = {}
 for name, acc_list in acc_means.items():
     if "target" in name:
         continue
-    latex_row = f"{name.replace('_','-').upper()} &"
+
+    latex_name = name
+    if name in name_map:
+        latex_name= name_map[name]
+
+    latex_row = f"{latex_name.replace('_','-').upper()} &"
     acc_sum = 0
     for pair in pairs:
         acc = acc_list[pair]
