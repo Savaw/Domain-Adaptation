@@ -17,17 +17,15 @@ DATASET_PAIRS = [("amazon", "webcam"), ("amazon", "dslr"),
 def run_experiment_on_model(args, model_name):
     for trial_number in range(args.initial_trial, args.initial_trial + args.trials_count):
         base_output_dir = f"{args.results_root}/results/vishook/{model_name}/{trial_number}"
-        os.makedirs(base_output_dir, exist_ok=True)
-
-
-        with open(results_file, "w") as myfile:
-            myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
+        os.makedirs(base_output_dir, exist_ok=True)        
 
         if not args.hp_tune:
             hp = HP(lr=args.lr, gamma=args.gamma)
 
             d = datetime.now()
             results_file = f"{base_output_dir}/e{hp.max_epochs}_p{hp.patience}_lr{hp.lr}_g{hp.gamma}_{d.strftime('%Y%m%d-%H:%M:%S')}.txt"
+            with open(results_file, "w") as myfile:
+                myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
 
             for source_domain, target_domain in DATASET_PAIRS:
                 train(args, model_name, hp, base_output_dir, results_file, source_domain, target_domain)
