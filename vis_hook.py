@@ -25,12 +25,12 @@ class VizHook:
         accuracy_validator = AccuracyValidator()
         accuracy = accuracy_validator.compute_score(src_val=src_val)
         print("src_val accuracy:", accuracy)
+        
         accuracy_validator = AccuracyValidator()
-        accuracy = accuracy_validator.compute_score(
-            src_val=target_val_with_labels)
+        accuracy = accuracy_validator.compute_score(src_val=target_val_with_labels)
         print("target_val accuracy:", accuracy)
 
-        if epoch >= 1 and epoch % kwargs.get("frequency", 5) != 0:
+        if epoch >= 2 and epoch % kwargs.get("frequency", 5) != 0:
             return
 
         features = [src_val["features"], target_val["features"]]
