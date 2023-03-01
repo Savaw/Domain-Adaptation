@@ -22,21 +22,27 @@ import copy
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(model_name, hp: HP, source_checkpoint_dir):
-    source_trainer = get_source_trainer(source_checkpoint_dir)
+def get_model(model_name, hp: HP, source_checkpoint_dir, data_root, source_domain):
     
-    G = copy.deepcopy(source_trainer.adapter.models["G"])
-    C = copy.deepcopy(source_trainer.adapter.models["C"])
-    D = Discriminator(in_size=2048, h=1024).to(device)
+    if source_checkpoint_dir:
+        source_trainer = get_source_trainer(source_checkpoint_dir)
+        
+        G = copy.deepcopy(source_trainer.adapter.models["G"])
+        C = copy.deepcopy(source_trainer.adapter.models["C"])
+        D = Discriminator(in_size=2048, h=1024).to(device)
 
-    # if True:
-    #     G.fc = C.net[:6]
-    #     C.net = C.net[6:]
-    #     D = Discriminator(in_size=128, h=256).to(device)
+    else:
+        weights_root = os.path.join(data_root, "weights")
+
+        G = office31G(pretrained=True, model_dir=weights_root).to(device)
+        C = office31C(domain=source_domain, pretrained=True,
+                    model_dir=weights_root).to(device)
+
+        D = Discriminator(in_size=2048, h=1024).to(device)
+     
 
     optimizers = Optimizers((torch.optim.Adam, {"lr": hp.lr}))
     lr_schedulers = LRSchedulers((torch.optim.lr_scheduler.ExponentialLR, {"gamma": hp.gamma}))
-    # lr_schedulers = LRSchedulers((torch.optim.lr_scheduler.MultiStepLR, {"milestones": [2, 5, 10, 20, 40], "gamma": hp.gamma}))
     
 
     if model_name == DAModels.DANN:

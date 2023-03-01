@@ -77,7 +77,9 @@ def run_experiment_on_model(args, model_name, trial_number):
             pair_name = f"{source_domain[0]}2{target_domain[0]}"
 
             hp_parmas = hp_map[DAModels.CDAN.name][pair_name]
-            hp = HP(lr=hp_parmas[0], gamma=hp_parmas[1])
+            lr = args.lr if args.lr else hp_parmas[0]
+            gamma = args.gamma if args.gamma else hp_parmas[1]
+            hp = HP(lr=lr, gamma=gamma)
 
             tracemalloc.start()
 
@@ -143,13 +145,13 @@ if __name__ == "__main__":
     parser.add_argument('--data_root', default="../datasets/pytorch-adapt/")
     parser.add_argument('--results_root', default="../results/")
     parser.add_argument('--model_names', default=["DANN"], nargs='+')
-    parser.add_argument('--lr', default=0.0001, type=float)
-    parser.add_argument('--gamma', default=0.99, type=float)
+    parser.add_argument('--lr', default=None, type=float)
+    parser.add_argument('--gamma', default=None, type=float)
     parser.add_argument('--hp_tune', default=False, type=bool)
     parser.add_argument('--source', default=None)
     parser.add_argument('--target', default=None) 
     parser.add_argument('--vishook_frequency', default=5, type=int)
-    parser.add_argument('--source_checkpoint_base_dir', default='../results/DAModels.SOURCE/')
+    parser.add_argument('--source_checkpoint_base_dir', default=None) # default='../results/DAModels.SOURCE/'
     parser.add_argument('--source_checkpoint_trial_number', default=-1, type=int)
 
     args = parser.parse_args()

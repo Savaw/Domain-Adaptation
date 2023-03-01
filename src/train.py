@@ -39,7 +39,7 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
 
     source_checkpoint_dir = f"{args.source_checkpoint_base_dir}/{args.source_checkpoint_trial_number}/{pair_name}/saved_models"
     print("source_checkpoint_dir", source_checkpoint_dir)
-    adapter = get_model(model_name, hp, source_checkpoint_dir)
+    adapter = get_model(model_name, hp, source_checkpoint_dir, args.data_root, source_domain)
     
     checkpoint_fn = CheckpointFnCreator(dirname=f"{output_dir}/saved_models", require_empty=False)
     

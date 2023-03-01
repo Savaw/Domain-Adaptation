@@ -14,7 +14,7 @@ Use [this link](https://pytorch.org/get-started/previous-versions/) to find the 
 - Train example which will perform MMD and CORAL adaptation on all 6 domain adaptations tasks from office31 dataset:
 
 ```bash
-python main.py --model_names MMD CORAL --batch_size 32 --source_checkpoint_trial_number 1
+python main.py --model_names MMD CORAL --batch_size 32 
 ```
 
 - Train example for tuning parameters of DANN model
@@ -23,7 +23,7 @@ python main.py --model_names MMD CORAL --batch_size 32 --source_checkpoint_trial
 python main.py --max_epochs 10 --patience 3 --trials_count 1 --model_names DANN --num_workers 2 --batch_size 32 --source amazon --target webcam --hp_tune True 
 ```
 
-See "Code Structure" section for all the available parameters.
+Check "Available arguments" in "Code Structure" section for all the available arguments.
 
 ## Code Structure
 
@@ -52,11 +52,11 @@ The main code for project is located in the `src/` directory.
 
     - `results_root`: Path to the directory to store the results
 
-    - `model_names`: Names of models to run separated by space - available options: DANN CDAN MMD MCD CORAL
+    - `model_names`: Names of models to run separated by space - available options: DANN, CDAN, MMD, MCD, CORAL, SOURCE
 
-    - `lr`: learning rate
+    - `lr`: learning rate**
 
-    - `gamma`: Gamma value for ExponentialLR scheduler
+    - `gamma`: Gamma value for ExponentialLR**
 
     - `hp_tune`: Set true of you want to run for different hyperparameters, used for hyperparameter tuning
 
@@ -66,7 +66,7 @@ The main code for project is located in the `src/` directory.
 
     - `vishook_frequency`: Number of epochs to wait before save a visualization
 
-    - `source_checkpoint_base_dir`: Path to source-only trained model directory to use as base
+    - `source_checkpoint_base_dir`: Path to source-only trained model directory to use as base, set `None` to not use source-trained model***
 
     - `source_checkpoint_trial_number`: Trail number of source-only trained model to use
 
@@ -86,3 +86,10 @@ The main code for project is located in the `src/` directory.
 
 - `vis_hook.py`: Contains VizHook class which is used for visualization
 
+** Use can also set different lr and gammas for different models and tasks by changing `hp_map` in `main.py` directly.
+
+*** For perfoming domain adaptation on source-trained model, one must should train the model for source using option `--model_name SOURCE` first
+
+## Acknowledgements
+
+[Pytorch adapt](https://github.com/KevinMusgrave/pytorch-adapt/tree/0b0fb63b04c9bd7e2cc6cf45314c7ee9d6e391c0)
