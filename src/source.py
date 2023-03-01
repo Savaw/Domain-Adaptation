@@ -28,11 +28,11 @@ import copy
 
 from pprint import pprint
 
-PATIENCE = 10
+PATIENCE = 5
 EPOCHS = 50
 BATCH_SIZE = 32
 NUM_WORKERS = 2
-TRIAL_COUNT = 3
+TRIAL_COUNT = 5
 
 logging.basicConfig()
 logging.getLogger("pytorch-adapt").setLevel(logging.WARNING)
@@ -55,34 +55,6 @@ class ClassifierAdapter(BaseGCAdapter):
     def hook_cls(self):
         return ClassifierHook
 
-
-class VizHook:
-    def __init__(self, **kwargs):
-        self.required_data = ["src_val"]
-        self.kwargs = kwargs
-
-    def __call__(self, epoch, src_val, target_val, **kwargs):
-        accuracy_validator = AccuracyValidator()
-        accuracy = accuracy_validator.compute_score(src_val=src_val)
-        print("src_val accuracy:", accuracy)
-
-        if epoch >= 1 and epoch % 5 != 0:
-            return
-
-        features = [src_val["features"], target_val["features"]]
-        domain = [src_val["domain"], target_val["domain"]]
-        features = torch.cat(features, dim=0).cpu().numpy()
-        domain = torch.cat(domain, dim=0).cpu().numpy()
-        emb = umap.UMAP().fit_transform(features)
-
-        df = pd.DataFrame(emb).assign(domain=domain)
-        df["domain"] = df["domain"].replace({0: "Source", 1: "Target"})
-        sns.set_theme(style="white", rc={"figure.figsize": (8, 6)})
-        sns.scatterplot(data=df, x=0, y=1, hue="domain", s=10)
-        plt.savefig(f"{self.kwargs['output_dir']}/val_{epoch}.png") 
-        plt.close('all')
-
-
 root='/content/drive/MyDrive/Shared with Sabas/Bsc/'
 # root="datasets/pytorch-adapt/"
 
@@ -94,16 +66,17 @@ num_workers=NUM_WORKERS
 device = torch.device("cuda")
 model_dir = os.path.join(data_root, "weights")
 
-DATASET_PAIRS = [("amazon", "webcam"), 
-                    ("webcam", "dslr"),
-                    ("dslr", "amazon"),]
+DATASET_PAIRS = [("amazon", ["webcam", "dslr"]),
+                    ("webcam", ["dslr", "amazon"]),
+                    ("dslr", ["amazon", "webcam"])
+                    ]
 
-MODEL_NAME = "base_target"
+MODEL_NAME = "base"
 model_name = MODEL_NAME
 
-pass_next= 3
-pass_trial = 1
-for trial_number in range(TRIAL_COUNT):
+pass_next= 0
+pass_trial = 0
+for trial_number in range(10, 10 + TRIAL_COUNT):
     if pass_trial:
         pass_trial -= 1
         continue
@@ -117,51 +90,53 @@ for trial_number in range(TRIAL_COUNT):
     with open(results_file, "w") as myfile:
         myfile.write("pair, source_acc, target_acc, best_epoch, time\n")
 
-    for _, target_domain in DATASET_PAIRS:
+    for source_domain, target_domains in DATASET_PAIRS:
+      datasets = get_office31([source_domain], [], folder=data_root)
+      dc = DataloaderCreator(batch_size=batch_size, 
+                              num_workers=num_workers, 
+                              )
+      dataloaders = dc(**datasets)        
+
+      G = office31G(pretrained=True, model_dir=model_dir)
+      C = office31C(domain=source_domain, pretrained=True, model_dir=model_dir)
+
+      optimizers = Optimizers((torch.optim.Adam, {"lr": 0.0005}))
+      lr_schedulers = LRSchedulers((torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.99}))
+
+      if model_name == "base":
+        models = Models({"G": G, "C": C})
+        adapter= ClassifierAdapter(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
+                  
+
+      checkpoint_fn = CheckpointFnCreator(dirname="saved_models", require_empty=False)
+      val_hooks = [ScoreHistory(AccuracyValidator())]
+      
+      trainer = Ignite(
+          adapter, val_hooks=val_hooks, checkpoint_fn=checkpoint_fn, 
+      )
+
+      early_stopper_kwargs = {"patience": PATIENCE}
+
+      start_time = datetime.now()
+
+      best_score, best_epoch = trainer.run(
+          datasets, dataloader_creator=dc, max_epochs=EPOCHS, early_stopper_kwargs=early_stopper_kwargs
+      )
+
+      end_time = datetime.now()
+      training_time = end_time - start_time
+
+      for target_domain in target_domains:
         if pass_next:
           pass_next -= 1
           continue
-        pair_name = f"{target_domain[0]}2{target_domain[0]}"
+
+        pair_name = f"{source_domain[0]}2{target_domain[0]}"
         output_dir = os.path.join(base_output_dir, pair_name)
         os.makedirs(output_dir, exist_ok=True)
 
         print("output dir:", output_dir)
 
-        datasets = get_office31([target_domain], [], folder=data_root)
-        dc = DataloaderCreator(batch_size=batch_size, 
-                                num_workers=num_workers, 
-                                )
-        dataloaders = dc(**datasets)        
-
-        G = office31G(pretrained=True, model_dir=model_dir)
-        C = office31C(domain=target_domain, pretrained=True, model_dir=model_dir)
-
-        optimizers = Optimizers((torch.optim.Adam, {"lr": 0.0005}))
-        lr_schedulers = LRSchedulers((torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.99}))
-
-        if model_name == "base":
-          models = Models({"G": G, "C": C})
-          adapter= ClassifierAdapter(models=models, optimizers=optimizers, lr_schedulers=lr_schedulers)
-                    
-
-        checkpoint_fn = CheckpointFnCreator(dirname="saved_models", require_empty=False)
-        val_hooks = [ScoreHistory(AccuracyValidator())]
-        
-        trainer = Ignite(
-            adapter, val_hooks=val_hooks, checkpoint_fn=checkpoint_fn, 
-        )
-
-        early_stopper_kwargs = {"patience": PATIENCE}
-
-        start_time = datetime.now()
-
-        best_score, best_epoch = trainer.run(
-            datasets, dataloader_creator=dc, max_epochs=EPOCHS, early_stopper_kwargs=early_stopper_kwargs
-        )
-
-        end_time = datetime.now()
-        training_time = end_time - start_time
-        
         # print(f"best_score={best_score}, best_epoch={best_epoch}, training_time={training_time.seconds}")
 
         plt.plot(val_hooks[0].score_history, label='source')
@@ -169,14 +144,15 @@ for trial_number in range(TRIAL_COUNT):
         plt.legend()
         plt.savefig(f"{output_dir}/val_accuracy.png") 
         plt.close('all')
+        
 
+        datasets = get_office31([source_domain], [target_domain], folder=data_root, return_target_with_labels=True)
+        dc = DataloaderCreator(batch_size=64, num_workers=2, all_val=True)
 
         validator = AccuracyValidator(key_map={"src_val": "src_val"})
         src_score = trainer.evaluate_best_model(datasets, validator, dc)
         print("Source acc:", src_score)
 
-        datasets = get_office31([source_domain], [target_domain], folder=data_root, return_target_with_labels=True)
-        dc = DataloaderCreator(batch_size=64, num_workers=2, all_val=True)
         validator = AccuracyValidator(key_map={"target_val_with_labels": "src_val"})
         target_score = trainer.evaluate_best_model(datasets, validator, dc)
         print("Target acc:", target_score)
@@ -184,8 +160,8 @@ for trial_number in range(TRIAL_COUNT):
         with open(results_file, "a") as myfile:
             myfile.write(f"{pair_name}, {src_score}, {target_score}, {best_epoch}, {training_time.seconds}\n")
 
-        del trainer
-        del G
-        del C
-        gc.collect()
-        torch.cuda.empty_cache()
+      del trainer
+      del G
+      del C
+      gc.collect()
+      torch.cuda.empty_cache()

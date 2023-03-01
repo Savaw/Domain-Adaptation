@@ -7,9 +7,10 @@ from datetime import datetime
 
 from pytorch_adapt.datasets import DataloaderCreator, get_office31
 from pytorch_adapt.frameworks.ignite import CheckpointFnCreator, Ignite
-from pytorch_adapt.validators import AccuracyValidator, IMValidator, ScoreHistory
+from pytorch_adapt.validators import AccuracyValidator, IMValidator, ScoreHistory, DiversityValidator, EntropyValidator, MultipleValidators
 
 from models import get_model
+from utils import DAModels
 
 from vis_hook import VizHook
 
@@ -31,16 +32,27 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
                             download=args.download)
     
     dc = DataloaderCreator(batch_size=args.batch_size,
-                           num_workers=args.num_workers,
-                           train_names=["train"],
-                           val_names=["src_train", "target_train", "src_val", "target_val",
+                        num_workers=args.num_workers,
+                        train_names=["train"],
+                        val_names=["src_train", "target_train", "src_val", "target_val",
                                         "target_train_with_labels", "target_val_with_labels"])
 
-    adapter = get_model(model_name, hp, args.data_root, source_domain)
+    source_checkpoint_dir = f"{args.source_checkpoint_base_dir}/{args.source_checkpoint_trial_number}/{pair_name}/saved_models"
+    print("source_checkpoint_dir", source_checkpoint_dir)
+    adapter = get_model(model_name, hp, source_checkpoint_dir)
     
     checkpoint_fn = CheckpointFnCreator(dirname=f"{output_dir}/saved_models", require_empty=False)
-    scoreValidator = ScoreHistory(IMValidator())
+    
+    
     sourceAccuracyValidator = AccuracyValidator()
+    validators = {
+        "entropy": EntropyValidator(),
+        "diversity": DiversityValidator(),
+        # "accuracy": sourceAccuracyValidator,
+    }
+    validator = ScoreHistory(MultipleValidators(validators))
+
+    
     targetAccuracyValidator = AccuracyValidator(key_map={"target_val_with_labels": "src_val"})
 
     
@@ -49,7 +61,7 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
                 VizHook(output_dir=output_dir, frequency=args.vishook_frequency)]
     
     trainer = Ignite(
-        adapter, validator=scoreValidator, val_hooks=val_hooks, checkpoint_fn=checkpoint_fn
+        adapter, validator=validator, val_hooks=val_hooks, checkpoint_fn=checkpoint_fn
     )
 
     early_stopper_kwargs = {"patience": args.patience}
@@ -72,24 +84,25 @@ def train(args, model_name, hp, base_output_dir, results_file, source_domain, ta
     plt.savefig(f"{output_dir}/val_accuracy.png")
     plt.close('all')
 
-    plt.plot(scoreValidator.score_history)
+    plt.plot(validator.score_history)
     plt.title("score_history")
     plt.savefig(f"{output_dir}/score_history.png")
     plt.close('all')
 
-    src_score = val_hooks[0].score_history[-1]
+    src_score = trainer.evaluate_best_model(datasets, sourceAccuracyValidator, dc)
     print("Source acc:", src_score)
 
-    target_score = val_hooks[1].score_history[-1]
+    target_score = trainer.evaluate_best_model(datasets, targetAccuracyValidator, dc)
     print("Target acc:", target_score)
+    print("---------")
 
     if args.hp_tune:
         with open(results_file, "a") as myfile:
-            myfile.write(f"{hp.lr}, {hp.gamma}, {pair_name}, {target_score}, {best_epoch}, {best_score}\n")
+            myfile.write(f"{hp.lr}, {hp.gamma}, {pair_name}, {src_score}, {target_score}, {best_epoch}, {best_score}\n")
     else:
         with open(results_file, "a") as myfile:
             myfile.write(
-                f"{pair_name}, {src_score}, {target_score}, {best_epoch}, {training_time.seconds}\n")
+                f"{pair_name}, {src_score}, {target_score}, {best_epoch}, {best_score}, {training_time.seconds}, {hp.lr}, {hp.gamma},")
 
     del adapter
     gc.collect()
