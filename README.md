@@ -1,5 +1,11 @@
 # Domain-Adaptation
 
+This project contains code for different domain adaptation methods on Office31 dataset.
+
+Available methods include: DANN, CDAN, MCD, CORAL, MMD
+
+This project can be easily extended to use on other datasets or perform other adaptaion methods. (Check Code Structure to find out where you need to change.)
+
 ## Prepare Environment
 
 Install the requirements using conda from `requirements-conda.txt` (or using pip from `requirements.txt`). 
@@ -77,7 +83,7 @@ The main code for project is located in the `src/` directory.
 
 - `models.py`: Contains models for adaptation
 
-- `train.py`: Contains base training iteration
+- `train.py`: Contains base training iteration, dataset is also loaded here
 
 - `classifier_adapter.py`: Contains ClassifierAdapter class which is used for training a source-only model without adaptation
 
@@ -98,3 +104,4 @@ The main code for project is located in the `src/` directory.
 ## Acknowledgements
 
 [Pytorch Adapt](https://github.com/KevinMusgrave/pytorch-adapt/tree/0b0fb63b04c9bd7e2cc6cf45314c7ee9d6e391c0)
+
