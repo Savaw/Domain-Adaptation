@@ -99,7 +99,7 @@ if __name__ == "__main__":
         run_experiment_on_model(args, model_enum)
 
 # Tune
-# python main.py --max_epochs 10 --patience 3 --trials_count 1 --model_names SYMNET MCD --source amazon --target webcam --hp_tune True --vishook_frequency 10
+# python main.py --max_epochs 10 --patience 3 --trials_count 1 --model_names MMD CORAL MCD DANN CDAN --source amazon --target webcam --hp_tune True --vishook_frequency 10 --batch_size 8
 
 # Coral
-# CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 60 --patience 10 --trials_count 3 --model_names CORAL --num_workers 1 --batch_size 40
+# CUDA_VISIBLE_DEVICES=0 python main.py --max_epochs 60 --patience 10 --trials_count 3 --model_names MMD --num_workers 1 --batch_size 40
