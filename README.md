@@ -9,68 +9,80 @@ Python version: 3.8
 Having trouble with installing torch?
 Use [this link](https://pytorch.org/get-started/previous-versions/) to find the currect version for your device.
 
-## Structure
+## Run
+
+- Train example which will perform MMD and CORAL adaptation on all 6 domain adaptations tasks from office31 dataset:
+
+```bash
+python main.py --model_names MMD CORAL --batch_size 32 --source_checkpoint_trial_number 1
+```
+
+- Train example for tuning parameters of DANN model
+
+```bash
+python main.py --max_epochs 10 --patience 3 --trials_count 1 --model_names DANN --num_workers 2 --batch_size 32 --source amazon --target webcam --hp_tune True 
+```
+
+See "Code Structure" section for all the available parameters.
+
+## Code Structure
 
 The main code for project is located in the `src/` directory.
 
-- `main.py`
+- `main.py`: The entry to program
+  - **Available arguments:**
 
-The entry to program.
+    - `max_epochs`: Maximum number of epochs to run the training
 
-**Available arguments:**
+    - `patience`: Maximum number of epochs to continue if no improvement is seen
 
--- max_epochs: Maximum number of epochs to run the training
+    - `batch_size`
 
--- patience: Maximum number of epochs to continue if no improvement is seen
+    - `num_workers`
 
--- batch_size
+    - `trials_count`: Number of trials to run each of the tasks
 
--- num_workers
+    - `initial_trial`: The number to start indexing the trials from
 
--- trials_count: Number of trials to run each of the tasks
+    - `download`: Whether to download the dataset or not
 
--- initial_trial: The number to start indexing the trials from
+    - `root`: Path to the root of project
 
--- download: Whether to download the dataset or not
+    - `data_root`: Path to the data root
 
--- root: Path to the root of project
+    - `results_root`: Path to the directory to store the results
 
--- data_root: Path to the data root
+    - `model_names`: Names of models to run separated by space - available options: DANN CDAN MMD MCD CORAL
 
--- results_root: Path to the directory to store the results
+    - `lr`: learning rate
 
--- model_names: Names of models to run separated by space - available options: DANN CDAN MMD MCD CORAL
+    - `gamma`: Gamma value for ExponentialLR scheduler
 
--- lr: learning rate
+    - `hp_tune`: Set true of you want to run for different hyperparameters, used for hyperparameter tuning
 
--- gamma: Gamma value for ExponentialLR scheduler
+    - `source`: The source domain to run the training for, training will run for all the available domains if not specified - available options: amazon, dslr, webcam
 
--- hp_tune: Set true of you want to run for different hyperparameters, used for hyperparameter tuning
+    - `target`: The target domain to run the training for, training will run for all the available domains if not specified - available options: amazon, dslr, webcam
 
--- source: The source domain to run the training for, training will run for all the available domains if not specified - available options: amazon, dslr, webcam
+    - `vishook_frequency`: Number of epochs to wait before save a visualization
 
--- target: The target domain to run the training for, training will run for all the available domains if not specified - available options: amazon, dslr, webcam
+    - `source_checkpoint_base_dir`: Path to source-only trained model directory to use as base
 
--- vishook_frequency: Number of epochs to wait before save a visualization
+    - `source_checkpoint_trial_number`: Trail number of source-only trained model to use
 
--- source_checkpoint_base_dir: Path to source-only trained model directory to use as base
+- `models.py`: Contains models for adaptation
 
--- source_checkpoint_trial_number: Trail number of source-only trained model to use
+- `train.py`: Contains base training iteration
 
-- `models.py`
+- `classifier_adapter.py`: Contains ClassifierAdapter class which is used for training a source-only model without adaptation
 
+- `load_source.py`: Load source-only trained model to use as base model for adaptation
 
-- `train.py`
+- `source.py`: Contains source model
 
-- `classifier_adapter.py`
+- `train_source.py`: Contains base source-only training iteration
 
-- `load_source.py`
+- `utils.py`: Contains utility classes
 
-- `source.py`
-
-- `train_source.py`
-
-- `utils.py`
-
-- `vis_hook.py`
+- `vis_hook.py`: Contains VizHook class which is used for visualization
 
