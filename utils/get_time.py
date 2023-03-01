@@ -8,15 +8,15 @@ pairs = list(itertools.chain.from_iterable(pairs))
 pairs.sort()
 # print(pairs)
 
-ROUND_FACTOR = 3
+ROUND_FACTOR = 2
 all_accs_list = {}
 files = [
-    "all.txt", 
-    "all2.txt", 
-    "all3.txt",
+    # "all.txt", 
+    # "all2.txt", 
+    # "all3.txt",
     # "all_step_scheduler.txt",
     # "all_source_trained_1.txt",
-    # "all_source_trained_2_specific_hp.txt",
+    "all_source_trained_2_specific_hp.txt",
 ]
 for file in files:
     with open(file) as f:        
@@ -30,8 +30,8 @@ for file in files:
             if splitted[0] in pairs:
                 pair = splitted[0]
                 name = name.lower()
-    
-                acc = float(splitted[2].strip())
+
+                acc = float(splitted[5].strip()) #/ 60 / 60
                 if name not in all_accs_list:
                     all_accs_list[name] = {p:[] for p in pairs}
                 
@@ -47,7 +47,7 @@ for name, pair_list in all_accs_list.items():
     for pair, acc_list in pair_list.items():
         if len(acc_list) > 0:
             ## Calculate average and round
-            accs[pair] = round(100 * sum(acc_list) / len(acc_list), ROUND_FACTOR)
+            accs[pair] = round(sum(acc_list) / len(acc_list), ROUND_FACTOR)
             vars[pair] = round(np.var(acc_list) * 100, ROUND_FACTOR)
             print(vars[pair], "|||", acc_list)
 
@@ -68,8 +68,9 @@ table = []
 var_table = []
 
 for name, acc_list in acc_means_by_model_name.items():
-    if "target" in name:
+    if "target" in name or "source" in name:
         continue
+    print("~~~~%%%%~~~", name)
 
     var_list = vars_by_model_name[name]
     valid_accs = []
@@ -89,14 +90,14 @@ for name, acc_list in acc_means_by_model_name.items():
     table.append(table_row)
 
     var =round(np.var(valid_accs), ROUND_FACTOR)
-    print(var, "~~~~~~", valid_accs)
+    print(var, ">>>", valid_accs)
     var_table_row.append(var)
     var_table.append(var_table_row)
 
 t = np.array(table)
 t[t==None] = np.nan
 # pprint(t)
-col_max = t.max(axis=0)
+col_max = t.min(axis=0)
 
 
 pprint(table)
@@ -106,7 +107,7 @@ header = [pair for pair in pairs if pair[0] != pair[-1]]
 name_map = {"base_source": "Source-Only"}
 j = 0
 for name, acc_list in acc_means_by_model_name.items():
-    if "target" in name:
+    if "target" in name or "source" in name:
         continue
 
     latex_name = name
@@ -118,7 +119,7 @@ for name, acc_list in acc_means_by_model_name.items():
         if i == len(table[j]) - 1:
             acc_str = f"${acc}$"
         else:
-            acc_str = f"${acc} \pm {var_table[j][i]}$"
+            acc_str = f"${acc}$"
         if acc == col_max[i]:
             latex_row += f" \\underline{{{acc_str}}} &"
         else:
@@ -132,13 +133,13 @@ print(*header, sep=" & ")
 print(latex_table)
 
 data = np.array(table)
-legend = [key for key in acc_means_by_model_name.keys()]
+legend = [key for key in acc_means_by_model_name.keys() if "source" not in key]
 labels = [*header, "avg"]
 
 
-data = np.array([[71.75, 75.94 ,67.38, 90.99, 68.91, 96.67, 78.61], [64.0, 66.67, 37.32, 94.97, 45.74, 98.5, 67.87]])
-legend = ["CDAN", "Source-only"]
-labels = [*header, "avg"]
+# data = np.array([[71.75, 75.94 ,67.38, 90.99, 68.91, 96.67, 78.61], [64.0, 66.67, 37.32, 94.97, 45.74, 98.5, 67.87]])
+# legend = ["CDAN", "Source-only"]
+# labels = [*header, "avg"]
 
 import matplotlib.pyplot as plt
 
@@ -150,13 +151,14 @@ x = np.arange(m)
 
 # Plot the bars for each row side by side
 for i in range(n):
+
     row = data[i, :]
-    plt.bar(x + (i-n/2)*0.3, row, width=0.25, align='center')
+    plt.bar(x + (i-n/2)*0.1, row, width=0.08, align='center')
 
 # Set x-axis tick labels and labels
 plt.xticks(x, labels=labels)
 # plt.xlabel("Task")
-plt.ylabel("Accuracy")
+plt.ylabel("Time (s)")
 
 # Add a legend
 
