@@ -151,6 +151,6 @@ def train_model(model_name, Xs, ys, Xv, yv, Xt, yt, epochs=50, batch_size=32, re
     plt.legend()
     plt.xlabel("Epochs")
     plt.ylabel("Acc")
-    plt.savefig(f"results/{model.name}.png") 
+    plt.savefig(f"../results/{model.name}.png") 
     plt.close('all')
     

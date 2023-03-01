@@ -6,7 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 import tensorflow as tf 
 import matplotlib.pyplot as plt 
 import numpy as np
-from backbone import MyDecay, get_task, get_resnet, get_input_and_target_for_head
+from tf.backbone import MyDecay, get_task, get_resnet, get_input_and_target_for_head
 from sklearn.manifold import TSNE
 
 def pretrained_resnet_model(Xs, ys, Xt, yt, epochs=50, batch_size=32):
@@ -45,6 +45,6 @@ def pretrained_resnet_model(Xs, ys, Xt, yt, epochs=50, batch_size=32):
     plt.legend()
     plt.xlabel("Epochs")
     plt.ylabel("Acc")
-    plt.savefig('results/resnet.png') 
+    plt.savefig('../results/resnet.png') 
 
     return acc, val_acc

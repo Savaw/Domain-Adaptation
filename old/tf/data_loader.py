@@ -13,7 +13,7 @@ def load_data(source_domain,
               seed=123,
               image_size=(150, 150),
               batch_size=32,
-              base_path="datasets/office31"):
+              base_path="../datasets/office31"):
     """
     source_domains: List of domain(s) used for training and evaluating
     target_domain: List of domain(s) used for testing

@@ -1,7 +1,9 @@
 datasets
 results
 model-weights
-drafts
+other
+saved_models
 
 __pycache__
 .vscode
+venv
